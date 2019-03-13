@@ -119,19 +119,15 @@ func main() {
 	// Write header
 
 	w.WriteString(genComment)
-	w.WriteString("\n\n")
-	w.WriteString("package ")
-	w.WriteString(*pkg)
-	w.WriteString("\n\n")
+	fmt.Fprintf(w, "\n\npackage %s\n\n", *pkg)
 
 	w.WriteString("const (\n")
 	for i, f := range files {
-		w.WriteString("\t")
-		w.WriteString(constNames[f])
 		if i == 0 {
-			w.WriteString(" = iota")
+			fmt.Fprintf(w, "\t%s = iota\n", constNames[f])
+		} else {
+			fmt.Fprintf(w, "\t%s\n", constNames[f])
 		}
-		w.WriteString("\n")
 	}
 	w.WriteString(")\n\n")
 
