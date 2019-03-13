@@ -2,6 +2,8 @@
 
 Simple embedded SPIR-V for use with [vulkan-go](https://github.com/vulkan-go/vulkan) (and maybe [go-gl](https://github.com/go-gl/gl)). Similar to go-bindata, but keeps data in uint32 slices.
 
+This program detects the byte order in the .spv file and works correctly for little-endian and big-endian files.
+
 ## Installing
 
 `go get -u github.com/jclc/spvbin`
@@ -25,7 +27,9 @@ vert = getSPV(spv_vert)
 frag = getSPV(spv_frag)
 ```
 
-Avoid name conflicts.
+Avoid name conflicts. eg. `dir1/frag.spv` and `dir2/frag.spv` will have the same index constant.
+
+This program assumes your .spv files are valid SPIR-V; eg. they must be longer than 4 bytes, start with 0x07230203 and have a size divisible by 4 bytes.
 
 ## License
 

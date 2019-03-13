@@ -81,7 +81,7 @@ func main() {
 	}
 
 	if len(files) == 0 {
-		fmt.Println("No output files.")
+		fmt.Println("No input files.")
 		os.Exit(1)
 	}
 
@@ -89,6 +89,8 @@ func main() {
 
 	r := strings.NewReplacer(
 		".", "_",
+		"-", "_",
+		" ", "_",
 	)
 	var constPrefix string
 	if *export {
@@ -122,14 +124,18 @@ func main() {
 	w.WriteString(*pkg)
 	w.WriteString("\n\n")
 
-	// Write constants
-
-	var constType string
-	if *export {
-		constType = "SPVModuleIndex"
-	} else {
-		constType = "spvModuleIndex"
+	w.WriteString("const (\n")
+	for i, f := range files {
+		w.WriteString("\t")
+		w.WriteString(constNames[f])
+		if i == 0 {
+			w.WriteString(" = iota")
+		}
+		w.WriteString("\n")
 	}
+	w.WriteString(")\n\n")
+
+	// Write getter
 
 	var getter string
 	if *export {
@@ -138,24 +144,9 @@ func main() {
 		getter = "getSPV"
 	}
 
-	w.WriteString("type " + constType + " int\n\nconst (\n")
-	for i, f := range files {
-		w.WriteString("\t")
-		w.WriteString(constNames[f])
-		if i == 0 {
-			w.WriteString(" " + constType + " = iota")
-		}
-		w.WriteString("\n")
-	}
-	w.WriteString(")\n\n")
-
-	// Write getter
-
-	w.WriteString("// " + getter + " returns a SPIR-V module for the given index.\n")
-
-	w.WriteString("func " + getter + "(which " + constType + ") []uint32 {\n" +
-		"\tif which < 0 || which > ")
-	w.WriteString(fmt.Sprintf("%d {\n", len(files)-1))
+	fmt.Fprintf(w, "// %s returns a SPIR-V module for the given index.\n", getter)
+	fmt.Fprintf(w, "func %s(which int) []uint32 {\n", getter)
+	fmt.Fprintf(w, "\tif which < 0 || which > %d {\n", len(files)-1)
 	w.WriteString("\t\tpanic(\"Invalid spvbin index\")\n")
 	w.WriteString("\t}\n\n")
 	w.WriteString("\tif _spvBin == nil {\n")
@@ -173,24 +164,23 @@ func main() {
 	for _, f := range files {
 		spv, err := os.Open(f)
 		if err != nil {
-			fmt.Printf("Error opening file %s:", f)
-			fmt.Println(err)
+			fmt.Printf("Error opening file %s: %v", f, err)
 			os.Exit(1)
 		}
 
 		w.WriteString("\t[]uint32{")
 		var b bytes.Buffer
-		var fileEndianness binary.ByteOrder
+		var fileBO binary.ByteOrder
 		var bb [4]byte
 		var ui uint32
 
 		spv.Read(bb[:])
 		if bb[0] != 0x07 { // assume spirv magic number; 0x07230203
-			fileEndianness = binary.LittleEndian
+			fileBO = binary.LittleEndian
 		} else {
-			fileEndianness = binary.BigEndian
+			fileBO = binary.BigEndian
 		}
-		ui = fileEndianness.Uint32(bb[:])
+		ui = fileBO.Uint32(bb[:])
 		w.WriteString("0x")
 		binary.Write(h, e, ui)
 		w.WriteString(", ")
@@ -210,7 +200,7 @@ func main() {
 				break
 			}
 			w.WriteString("0x")
-			ui = fileEndianness.Uint32(bb[:])
+			ui = fileBO.Uint32(bb[:])
 			binary.Write(h, e, ui)
 
 			if b.Len() == 0 {
@@ -227,15 +217,15 @@ func main() {
 	// Write clearing function
 
 	if *clearFunc {
-		var clearFunc string
+		var cls string
 		if *export {
-			clearFunc = "SPVClear"
+			cls = "SPVClear"
 		} else {
-			clearFunc = "spvClear"
+			cls = "spvClear"
 		}
 
-		w.WriteString("// " + clearFunc + " clears the embedded SPIR-V modules from memory.\n")
-		w.WriteString("func " + clearFunc + "() {\n")
+		fmt.Fprintf(w, "// %s clears the embedded SPIR-V modules from memory.\n", cls)
+		fmt.Fprintf(w, "func %s() {\n", cls)
 		w.WriteString("\t_spvBin = nil\n")
 		w.WriteString("}\n\n")
 	}
