@@ -2,6 +2,10 @@
 
 Simple embedded SPIR-V for use with [vulkan-go](https://github.com/vulkan-go/vulkan) (and maybe [go-gl](https://github.com/go-gl/gl)). Similar to go-bindata, but keeps data in uint32 slices.
 
+## Installing
+
+`go get -u github.com/jclc/spvbin`
+
 ## Usage
 
 `spvbin -package <package> [-out <output file>] [-export] <file.spv or dir/ [file2.spv or dir2/ ...]>`
@@ -22,3 +26,7 @@ frag = getSPV(spv_frag)
 ```
 
 Avoid name conflicts.
+
+## License
+
+BSD 3-clause. Generated code is public domain or yours to choose.

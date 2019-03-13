@@ -14,10 +14,14 @@ import (
 )
 
 var (
-	export = flag.Bool("export", false, "Set to true to export getter functions")
-	// compress = flag.Bool("compress", false, "Set to true to compress shaders")
-	pkg     = flag.String("package", "", "Name of the output package")
-	outFile = flag.String("output", "spvbin.go", "Name of the output file")
+	export = flag.Bool("export", false,
+		"Set to true to export a getter function")
+	pkg = flag.String("package", "",
+		"Name of the package in the output file")
+	outFile = flag.String("output", "spvbin.go",
+		"Name of the output file")
+	clearFunc = flag.Bool("clear-func", false,
+		"Include a function to clears the modules from memory")
 )
 
 const (
@@ -33,7 +37,7 @@ func main() {
 	}
 
 	files := flag.Args()
-	var dirs []int // indices of dirs to remove from "files"
+	var dirs []int // indices of dirs to remove from 'files'
 
 	for i, f := range files {
 		info, err := os.Stat(f)
@@ -42,6 +46,7 @@ func main() {
 			os.Exit(1)
 		}
 		if info.IsDir() {
+			// If a directory is supplied as an argument, add all .spv files in that directory.
 			dirs = append(dirs, i)
 			d, err := ioutil.ReadDir(f)
 			if err != nil {
@@ -61,7 +66,7 @@ func main() {
 		}
 	}
 
-	// Remove any directories
+	// Remove any directories in 'files'
 	if dirs != nil {
 		tmp := files
 		files = make([]string, 0, len(tmp)-len(dirs))
@@ -198,7 +203,12 @@ func main() {
 		}
 
 		for {
-			b.Read(bb[:])
+			// SPIR-V should always be 4-byte aligned, so we don't worry about
+			// how many bytes we read
+			_, err := b.Read(bb[:])
+			if err != nil {
+				break
+			}
 			w.WriteString("0x")
 			ui = fileEndianness.Uint32(bb[:])
 			binary.Write(h, e, ui)
@@ -216,15 +226,17 @@ func main() {
 
 	// Write clearing function
 
-	var clearFunc string
-	if *export {
-		clearFunc = "SPVClear"
-	} else {
-		clearFunc = "spvClear"
-	}
+	if *clearFunc {
+		var clearFunc string
+		if *export {
+			clearFunc = "SPVClear"
+		} else {
+			clearFunc = "spvClear"
+		}
 
-	w.WriteString("// " + clearFunc + " clears the embedded SPIR-V modules from memory.")
-	w.WriteString("func " + clearFunc + "() {\n")
-	w.WriteString("\t_spvBin = nil\n")
-	w.WriteString("}\n\n")
+		w.WriteString("// " + clearFunc + " clears the embedded SPIR-V modules from memory.\n")
+		w.WriteString("func " + clearFunc + "() {\n")
+		w.WriteString("\t_spvBin = nil\n")
+		w.WriteString("}\n\n")
+	}
 }
