@@ -130,7 +130,6 @@ func main() {
 		} else {
 			fmt.Fprintf(w, "\t%s", constNames[f])
 		}
-		fmt.Fprintf(w, " // %s\n", f)
 	}
 	w.WriteString(")\n\n")
 
