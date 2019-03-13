@@ -22,6 +22,8 @@ var (
 		"Name of the output file")
 	clearFunc = flag.Bool("clear-func", false,
 		"Include a function to clears the modules from memory")
+	filepathGetter = flag.Bool("filepath-getter", false,
+		"Include a function to get the shaders' filepaths")
 )
 
 const (
@@ -124,10 +126,11 @@ func main() {
 	w.WriteString("const (\n")
 	for i, f := range files {
 		if i == 0 {
-			fmt.Fprintf(w, "\t%s = iota\n", constNames[f])
+			fmt.Fprintf(w, "\t%s = iota", constNames[f])
 		} else {
-			fmt.Fprintf(w, "\t%s\n", constNames[f])
+			fmt.Fprintf(w, "\t%s", constNames[f])
 		}
+		fmt.Fprintf(w, " // %s\n", f)
 	}
 	w.WriteString(")\n\n")
 
@@ -150,6 +153,46 @@ func main() {
 	w.WriteString("\t}\n\n")
 	w.WriteString("\treturn _spvBin[which]\n")
 	w.WriteString("}\n\n")
+
+	// Write filepath getter
+
+	if *filepathGetter {
+		var fpGetter string
+		if *export {
+			fpGetter = "GetSPVFilepath"
+		} else {
+			fpGetter = "getSPVFilepath"
+		}
+
+		indices := make([]int, len(files))
+		w.WriteString("const _spvPaths = `")
+		j := 0
+		for i, f := range files {
+			w.WriteString(f)
+			j += len(f)
+			indices[i] = j
+		}
+
+		w.WriteString("`\n\nvar _spvPathIndices = []int{")
+		for i, j := range indices {
+			if i != len(indices)-1 {
+				fmt.Fprintf(w, "%d, ", j)
+			} else {
+				fmt.Fprintf(w, "%d", j)
+			}
+		}
+		w.WriteString("}\n\n")
+
+		fmt.Fprintf(w, "func %s(which int) string {\n", fpGetter)
+		fmt.Fprintf(w, "\tif which < 0 || which > %d {\n", len(files)-1)
+		w.WriteString("\t\tpanic(\"Invalid spvbin index\")\n")
+		w.WriteString("\t}\n\n")
+
+		w.WriteString("\tif which == 0 {\n")
+		w.WriteString("\t\treturn _spvPaths[:_spvPathIndices[0]]\n")
+		w.WriteString("\t}\n")
+		w.WriteString("\treturn _spvPaths[_spvPathIndices[which-1]:_spvPathIndices[which]]\n}\n\n")
+	}
 
 	// Write binary data
 
@@ -223,6 +266,6 @@ func main() {
 		fmt.Fprintf(w, "// %s clears the embedded SPIR-V modules from memory.\n", cls)
 		fmt.Fprintf(w, "func %s() {\n", cls)
 		w.WriteString("\t_spvBin = nil\n")
-		w.WriteString("}\n\n")
+		w.WriteString("}\n")
 	}
 }
