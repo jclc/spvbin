@@ -126,9 +126,9 @@ func main() {
 	w.WriteString("const (\n")
 	for i, f := range files {
 		if i == 0 {
-			fmt.Fprintf(w, "\t%s = iota", constNames[f])
+			fmt.Fprintf(w, "\t%s = iota\n", constNames[f])
 		} else {
-			fmt.Fprintf(w, "\t%s", constNames[f])
+			fmt.Fprintf(w, "\t%s\n", constNames[f])
 		}
 	}
 	w.WriteString(")\n\n")
