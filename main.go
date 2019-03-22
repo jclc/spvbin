@@ -96,14 +96,14 @@ func main() {
 	)
 	var constPrefix string
 	if *export {
-		constPrefix = "SPV_"
+		constPrefix = "SPV"
 	} else {
-		constPrefix = "spv_"
+		constPrefix = "spv"
 	}
 	constNames := make(map[string]string, len(files))
 	for _, f := range files {
 		fbase := filepath.Base(f)
-		c := constPrefix + r.Replace(fbase[:len(fbase)-4]) // trim .spv
+		c := constPrefix + "_" + r.Replace(fbase[:len(fbase)-4]) // trim .spv
 		constNames[f] = c
 	}
 
@@ -131,6 +131,7 @@ func main() {
 			fmt.Fprintf(w, "\t%s\n", constNames[f])
 		}
 	}
+	fmt.Fprintf(w, "\n\t%sModuleCount\n", constPrefix)
 	w.WriteString(")\n\n")
 
 	// Write getter
