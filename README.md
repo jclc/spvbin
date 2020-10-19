@@ -1,3 +1,5 @@
+I made https://github.com/jclc/spv as a better alternative. Don't use this.
+
 # spvbin
 
 Simple embedded SPIR-V for use with [vulkan-go](https://github.com/vulkan-go/vulkan) (and maybe [go-gl](https://github.com/go-gl/gl)). Similar to go-bindata, but keeps data in uint32 slices.
